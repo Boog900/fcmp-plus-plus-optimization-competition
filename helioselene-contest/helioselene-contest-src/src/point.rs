@@ -471,17 +471,20 @@ mod selene {
         "7a19d927b85cca9257c93177455c825f938bb198c8f09b37741e0aa6a1d3fdd2",
     );
 
-    const B: HelioseleneField = HelioseleneField(
-        [7556487686431327576, 17551737069031559182, 9174320235790983801, 8075648007084209857],
-    );
+    const B: HelioseleneField = HelioseleneField([
+        7556487686431327576,
+        17551737069031559182,
+        9174320235790983801,
+        8075648007084209857,
+    ]);
 
-    const G_X: HelioseleneField = HelioseleneField(
-        [1, 0, 0, 0]
-        ,
-    );
-    const G_Y: HelioseleneField = HelioseleneField(
-        [8367136868496834002, 10631786615102544695, 6325641539953132127, 8798302111665015442],
-    );
+    const G_X: HelioseleneField = HelioseleneField([1, 0, 0, 0]);
+    const G_Y: HelioseleneField = HelioseleneField([
+        8367136868496834002,
+        10631786615102544695,
+        6325641539953132127,
+        8798302111665015442,
+    ]);
 
     #[test]
     fn test_selene() {

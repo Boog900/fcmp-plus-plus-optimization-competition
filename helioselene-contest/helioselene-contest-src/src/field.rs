@@ -1,16 +1,25 @@
-use core::{ops::{Add, AddAssign, DerefMut, Mul, MulAssign, Neg, Sub, SubAssign}, iter::{Product, Sum}, convert::{Into, TryInto}};
+use core::{
+    convert::{Into, TryInto},
+    iter::{Product, Sum},
+    ops::{Add, AddAssign, DerefMut, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 
-use zeroize::{DefaultIsZeroes, Zeroize};
 use crypto_bigint::{Encoding, U256};
-use ff::{Field, FieldBits, PrimeField, PrimeFieldBits, helpers::sqrt_ratio_generic};
+use ff::{helpers::sqrt_ratio_generic, Field, FieldBits, PrimeField, PrimeFieldBits};
 use rand_core::RngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use zeroize::{DefaultIsZeroes, Zeroize};
 
 use crate::u8_from_bool;
 
 const LIMBS: usize = 4;
 
-const MODULUS: [u64; LIMBS] = [7977795179034167199, 13798879916737260376, 18446744073709551615, 9223372036854775807];
+const MODULUS: [u64; LIMBS] = [
+    7977795179034167199,
+    13798879916737260376,
+    18446744073709551615,
+    9223372036854775807,
+];
 
 const MODULUS_PLUS_ONE_DIV_FOUR: [u64; LIMBS] = [
     1994448794758541800,
@@ -144,7 +153,7 @@ impl Field for HelioseleneField {
         let c = [TWO_C[0] * overflow, TWO_C[1] * overflow];
         let (res, overflow) = add_l_r_2(&res, &c);
 
-        let c = [TWO_C[0] * overflow, TWO_C[1] *overflow];
+        let c = [TWO_C[0] * overflow, TWO_C[1] * overflow];
         let (res, _) = add_l_r_2(&res, &c);
 
         Self(res)
@@ -205,9 +214,12 @@ impl PrimeField for HelioseleneField {
 
     const S: u32 = 1;
 
-    const ROOT_OF_UNITY: Self = Self(
-        [7977795179034167198, 13798879916737260376, 18446744073709551615, 9223372036854775807],
-    );
+    const ROOT_OF_UNITY: Self = Self([
+        7977795179034167198,
+        13798879916737260376,
+        18446744073709551615,
+        9223372036854775807,
+    ]);
     const ROOT_OF_UNITY_INV: Self = Self([
         7977795179034167198,
         13798879916737260376,
@@ -215,9 +227,7 @@ impl PrimeField for HelioseleneField {
         9223372036854775807,
     ]);
 
-    const DELTA: Self = Self(
-        [25, 0, 0, 0],
-    );
+    const DELTA: Self = Self([25, 0, 0, 0]);
 }
 
 impl PrimeFieldBits for HelioseleneField {
@@ -228,9 +238,7 @@ impl PrimeFieldBits for HelioseleneField {
     }
 
     fn char_le_bits() -> FieldBits<Self::ReprBits> {
-        U256::from_be_hex(Self::MODULUS)
-            .to_le_bytes()
-            .into()
+        U256::from_be_hex(Self::MODULUS).to_le_bytes().into()
     }
 }
 
@@ -374,11 +382,11 @@ impl HelioseleneField {
     const fn sub_inner(&self, rhs: &HelioseleneField) -> HelioseleneField {
         let (res, overflow) = sub_l_r_4(&self.0, &rhs.0);
 
-        let c = [TWO_C[0] * overflow , TWO_C[1] * overflow];
+        let c = [TWO_C[0] * overflow, TWO_C[1] * overflow];
 
         let (res, overflow) = sub_l_r_2(&res, &c);
 
-        let c = [TWO_C[0] * overflow , TWO_C[1] * overflow];
+        let c = [TWO_C[0] * overflow, TWO_C[1] * overflow];
 
         let (res, _) = sub_l_r_2(&res, &c);
 
@@ -459,7 +467,11 @@ impl HelioseleneField {
         // 2C*2? + C: 129 bits
         // 256 bit output
         let (top, overflow) = TWO_C[1].overflowing_mul(c2_mul);
-        let c = [C[0] * extra_bit + TWO_C[0] * c2_mul, C[1] * extra_bit + top, overflow as u64];
+        let c = [
+            C[0] * extra_bit + TWO_C[0] * c2_mul,
+            C[1] * extra_bit + top,
+            overflow as u64,
+        ];
         let (res, _) = add_l_r_3(&lo, &c);
 
         // We keep the last bit as unreduced.
@@ -471,7 +483,7 @@ impl HelioseleneField {
 #[inline(always)]
 fn square_l(l: &[u64; 4]) -> [u64; 8] {
     let mut res = [0; 8];
-    
+
     let mut i = 1;
     while i < 4 {
         let mut carry = 0;
@@ -483,26 +495,24 @@ fn square_l(l: &[u64; 4]) -> [u64; 8] {
         res[i + j] = carry;
         i += 1;
     }
-    
-    let mut carry  = 0;
+
+    let mut carry = 0;
     let mut i = 0;
     while i < 8 {
         (carry, res[i]) = (res[i] >> 63, (res[i] << 1) + carry);
         i += 1;
     }
 
-    
-    let mut i= 0;
+    let mut i = 0;
     let mut carry = 0;
     while i < 4 {
         (carry, res[i + i]) = mul_add2(l[i], l[i], res[i + i], carry);
-        (res[i + i + 1], carry )= add2(carry, res[i + i + 1]);
+        (res[i + i + 1], carry) = add2(carry, res[i + i + 1]);
         i += 1;
     }
 
     res
 }
-
 
 #[inline(always)]
 fn mul_l_r(l: &[u64; 4], r: &[u64; 4]) -> [u64; 8] {
@@ -526,13 +536,10 @@ fn mul_l_r(l: &[u64; 4], r: &[u64; 4]) -> [u64; 8] {
 }
 
 #[inline(always)]
-const fn sub_l_r_4(
-    l: &[u64; 4],
-    r: &[u64; 4]
-) -> ([u64; 4], u64) {
+const fn sub_l_r_4(l: &[u64; 4], r: &[u64; 4]) -> ([u64; 4], u64) {
     let mut res = [0; 4];
     let mut carry;
-    
+
     (res[0], carry) = sub2(l[0], r[0]);
     (res[1], carry) = sub3(l[1], r[1], carry);
     (res[2], carry) = sub3(l[2], r[2], carry);
@@ -542,10 +549,7 @@ const fn sub_l_r_4(
 }
 
 #[inline(always)]
-const fn sub_l_r_2(
-    b: &[u64; 4],
-    s: &[u64; 2],
-) -> ([u64; 4], u64) {
+const fn sub_l_r_2(b: &[u64; 4], s: &[u64; 2]) -> ([u64; 4], u64) {
     let mut res = [0; LIMBS];
     let mut carry;
 
@@ -575,10 +579,7 @@ const fn sub3(l: u64, r: u64, c: u64) -> (u64, u64) {
 }
 
 #[inline(always)]
-const fn add_l_r_4(
-    l: &[u64; 4],
-    r: &[u64; 4],
-) -> ([u64; 4], u64) {
+const fn add_l_r_4(l: &[u64; 4], r: &[u64; 4]) -> ([u64; 4], u64) {
     let mut res = [0; 4];
 
     let mut carry;
@@ -591,10 +592,7 @@ const fn add_l_r_4(
 }
 
 #[inline(always)]
-const fn add_l_r_2(
-    l: &[u64; 4],
-    r: &[u64; 2],
-) -> ([u64; 4], u64) {
+const fn add_l_r_2(l: &[u64; 4], r: &[u64; 2]) -> ([u64; 4], u64) {
     let mut res = [0; 4];
 
     let mut carry;
@@ -607,10 +605,7 @@ const fn add_l_r_2(
 }
 
 #[inline(always)]
-const fn add_l_r_3(
-    l: &[u64; 4],
-    r: &[u64; 3],
-) -> ([u64; 4], u64) {
+const fn add_l_r_3(l: &[u64; 4], r: &[u64; 3]) -> ([u64; 4], u64) {
     let mut res = [0; 4];
 
     let mut carry;
@@ -623,10 +618,7 @@ const fn add_l_r_3(
 }
 
 #[inline(always)]
-const fn add_l_r_6_2(
-    l: &[u64; 6],
-    r: &[u64; 4],
-) -> ([u64; 6], u64) {
+const fn add_l_r_6_2(l: &[u64; 6], r: &[u64; 4]) -> ([u64; 6], u64) {
     let mut res = [0; 6];
 
     let mut carry;
