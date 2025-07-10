@@ -422,8 +422,14 @@ impl HelioseleneField {
     }
 
     fn wide_reduce_limbs(limbs: [u64; LIMBS * 2]) -> HelioseleneField {
+        // Crandalls reduction algorithm.
+        // Output will take up the full 256 bits as this is only a partial reduction.
+        // Idea from: <https://github.com/iri031/constantine/blob/585f803b9444b1d021c1e2da0857c088f0bf410f/constantine/math/arithmetic/limbs_crandall.nim#L51>
+
         // Split lo & hi bits at WORDS.
         let lo: &[u64; LIMBS] = (&limbs[..LIMBS]).try_into().unwrap();
+
+        // We don't take the high bit off of lo as this is only a partial reduction.
 
         // Multiply hi by 2C.
         let hi_mul_C = mul_C_4((&limbs[LIMBS..]).try_into().unwrap());
@@ -436,7 +442,9 @@ impl HelioseleneField {
 
         // Split lo & hi bits at WORDS.
         let mut lo: [u64; LIMBS] = limbs[..LIMBS].try_into().unwrap();
+
         // Take the extra bit off of lo.
+        // We take the high bit here as we can easily add it onto the next addition.
         let extra_bit = lo[LIMBS - 1] >> 63;
         lo[LIMBS - 1] &= !(1 << 63);
 
@@ -468,7 +476,7 @@ impl HelioseleneField {
         // 256 bit output
         let (top, overflow) = TWO_C[1].overflowing_mul(c2_mul);
         let c = [
-            C[0] * extra_bit + TWO_C[0] * c2_mul,
+            C[0] * extra_bit + TWO_C[0] * c2_mul, // can't overflow.
             C[1] * extra_bit + top,
             overflow as u64,
         ];
