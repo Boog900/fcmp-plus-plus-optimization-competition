@@ -30,7 +30,7 @@ macro_rules! curve {
   ) => {
     fn recover_y(x: $Field) -> CtOption<$Field> {
       // x**3 + -3x + B
-      ((x.square() * x) - x - x - x + B).sqrt()
+      ((x.square() + NEG_3) * x + B).sqrt()
     }
 
     /// Point.
@@ -79,7 +79,7 @@ macro_rules! curve {
       #[allow(non_snake_case)]
       fn add(self, other: Self) -> Self {
         // add-2015-rcb
-        let b3 = B + B + B;
+        let b3 = THREE_B;
 
         let X1 = self.x;
         let Y1 = self.y;
@@ -88,7 +88,7 @@ macro_rules! curve {
         let Y2 = other.y;
         let Z2 = other.z;
 
-        let a = -$Field::from(3u64);
+        let a = NEG_3;
         let t0 = X1 * X2;
         let t1 = Y1 * Y2;
         let t2 = Z1 * Z2;
@@ -370,7 +370,7 @@ macro_rules! curve {
       type FieldElement = $Field;
 
       fn a() -> Self::FieldElement {
-        -$Field::from(3u64)
+        NEG_3
       }
       fn b() -> Self::FieldElement {
         B
@@ -399,12 +399,18 @@ mod helios {
         "22e8c739b0ea70b8be94a76b3ebb7b3b043f6f384113bf3522b49ee1edd73ad4",
     )));
 
+    const THREE_B: Field25519 = Field25519(Residue::new(&U256::from_be_hex(
+        "68BA55AD12BF522A3BBDF641BC3271B10CBE4DA8C33B3D9F681DDCA5C985B07C",
+    )));
+
     const G_X: Field25519 = Field25519(Residue::new(&U256::from_be_hex(
         "0000000000000000000000000000000000000000000000000000000000000003",
     )));
     const G_Y: Field25519 = Field25519(Residue::new(&U256::from_be_hex(
         "537b74d97ac0721cbd92668350205f0759003bddc586a5dcd243e639e3183ef4",
     )));
+
+    const NEG_3: Field25519 = Field25519(Residue::new(&U256::from_be_hex("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEA")));
 
     #[test]
     fn test_helios() {
@@ -444,6 +450,13 @@ mod selene {
         8075648007084209857,
     ]);
 
+    const THREE_B: HelioseleneField = HelioseleneField([
+        6713872701225648330,
+        6610707299910605178,
+        9076216633663399790,
+        5780199947543077956
+    ]);
+
     const G_X: HelioseleneField = HelioseleneField([1, 0, 0, 0]);
     const G_Y: HelioseleneField = HelioseleneField([
         8367136868496834002,
@@ -451,6 +464,14 @@ mod selene {
         6325641539953132127,
         8798302111665015442,
     ]);
+
+    const NEG_3: HelioseleneField = HelioseleneField ([
+        15955590358068334395,
+        9151015759764969136,
+        18446744073709551615,
+        18446744073709551615
+    ]);
+
 
     #[test]
     fn test_selene() {
