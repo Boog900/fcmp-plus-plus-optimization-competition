@@ -260,8 +260,7 @@ impl ConstantTimeEq for HelioseleneField {
 }
 
 impl HelioseleneField {
-    const TWO: Self = Self([2, 0, 0, 0]);
-    const NEG_TWO: Self = Self::ZERO.sub_inner(&Self::TWO);
+    const NEG_TWO: Self = Self([7977795179034167197, 13798879916737260376, 18446744073709551615, 9223372036854775807]);
 
     pub fn pow(&self, other: HelioseleneField) -> HelioseleneField {
         let mut table = [Self::ONE; 16];
@@ -760,7 +759,7 @@ impl Sum<HelioseleneField> for HelioseleneField {
 
 impl<'a> Sum<&'a HelioseleneField> for HelioseleneField {
     fn sum<I: Iterator<Item = &'a HelioseleneField>>(iter: I) -> HelioseleneField {
-        iter.sum()
+        iter.cloned().sum()
     }
 }
 
@@ -776,6 +775,11 @@ impl Product<HelioseleneField> for HelioseleneField {
 
 impl<'a> Product<&'a HelioseleneField> for HelioseleneField {
     fn product<I: Iterator<Item = &'a HelioseleneField>>(iter: I) -> HelioseleneField {
-        iter.product()
+        iter.cloned().product()
     }
+}
+
+#[test]
+fn test_helioselene_field() {
+  ff_group_tests::prime_field::test_prime_field_bits::<_, HelioseleneField>(&mut rand_core::OsRng);
 }
