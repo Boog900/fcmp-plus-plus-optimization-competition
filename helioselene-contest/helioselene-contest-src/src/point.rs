@@ -1,6 +1,6 @@
 use core::{
-  ops::{DerefMut, Add, AddAssign, Neg, Sub, SubAssign, Mul, MulAssign},
-  iter::Sum,
+    ops::{DerefMut, Add, AddAssign, Neg, Sub, SubAssign, Mul, MulAssign},
+    iter::Sum,
 };
 
 use rand_core::RngCore;
@@ -11,13 +11,13 @@ use subtle::{Choice, CtOption, ConstantTimeEq, ConditionallySelectable, Conditio
 use crypto_bigint::{U256, modular::constant_mod::Residue};
 
 use group::{
-  ff::{Field, PrimeField, PrimeFieldBits},
-  Group, GroupEncoding,
-  prime::PrimeGroup,
+    ff::{Field, PrimeField, PrimeFieldBits},
+    Group, GroupEncoding,
+    prime::PrimeGroup,
 };
 
 use dalek_ff_group::FieldElement as Field25519;
-use crate::{backend::u8_from_bool, field::HelioseleneField};
+use crate::{u8_from_bool, field::HelioseleneField};
 
 macro_rules! curve {
   (
@@ -28,14 +28,9 @@ macro_rules! curve {
     $G_X: literal,
     $G_Y: literal,
   ) => {
-    const G_X: $Field = $Field(Residue::new(&U256::from_be_hex($G_X)));
-    const G_Y: $Field = $Field(Residue::new(&U256::from_be_hex($G_Y)));
-
-    const B: $Field = $Field(Residue::new(&U256::from_be_hex($B)));
-
     fn recover_y(x: $Field) -> CtOption<$Field> {
       // x**3 + -3x + B
-      ((x.square() * x) - x - x - x + B).sqrt()
+      ((x.square() + NEG_3) * x + B).sqrt()
     }
 
     /// Point.
@@ -84,7 +79,7 @@ macro_rules! curve {
       #[allow(non_snake_case)]
       fn add(self, other: Self) -> Self {
         // add-2015-rcb
-        let b3 = B + B + B;
+        let b3 = THREE_B;
 
         let X1 = self.x;
         let Y1 = self.y;
@@ -93,7 +88,7 @@ macro_rules! curve {
         let Y2 = other.y;
         let Z2 = other.z;
 
-        let a = -$Field::from(3u64);
+        let a = NEG_3;
         let t0 = X1 * X2;
         let t1 = Y1 * Y2;
         let t2 = Z1 * Z2;
@@ -375,7 +370,7 @@ macro_rules! curve {
       type FieldElement = $Field;
 
       fn a() -> Self::FieldElement {
-        -$Field::from(3u64)
+        NEG_3
       }
       fn b() -> Self::FieldElement {
         B
@@ -390,8 +385,8 @@ macro_rules! curve {
 }
 
 mod helios {
-  use super::*;
-  curve!(
+    use super::*;
+    curve!(
     HelioseleneField,
     Field25519,
     HeliosPoint,
@@ -400,29 +395,46 @@ mod helios {
     "537b74d97ac0721cbd92668350205f0759003bddc586a5dcd243e639e3183ef4",
   );
 
-  #[test]
-  fn test_helios() {
-    ff_group_tests::group::test_prime_group_bits::<_, HeliosPoint>(&mut rand_core::OsRng);
-  }
+    const B: Field25519 = Field25519(Residue::new(&U256::from_be_hex(
+        "22e8c739b0ea70b8be94a76b3ebb7b3b043f6f384113bf3522b49ee1edd73ad4",
+    )));
 
-  #[test]
-  fn generator_helios() {
-    use helios::{G_X, G_Y, G};
-    assert!(G.x == G_X);
-    assert!(G.y == G_Y);
-    assert!(recover_y(G.x).unwrap() == -G.y);
-  }
+    const THREE_B: Field25519 = Field25519(Residue::new(&U256::from_be_hex(
+        "68BA55AD12BF522A3BBDF641BC3271B10CBE4DA8C33B3D9F681DDCA5C985B07C",
+    )));
 
-  #[test]
-  fn zero_x_is_invalid() {
-    assert!(Option::<Field25519>::from(recover_y(Field25519::ZERO)).is_none());
-  }
+    const G_X: Field25519 = Field25519(Residue::new(&U256::from_be_hex(
+        "0000000000000000000000000000000000000000000000000000000000000003",
+    )));
+    const G_Y: Field25519 = Field25519(Residue::new(&U256::from_be_hex(
+        "537b74d97ac0721cbd92668350205f0759003bddc586a5dcd243e639e3183ef4",
+    )));
+
+    const NEG_3: Field25519 = Field25519(Residue::new(&U256::from_be_hex("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEA")));
+
+    #[test]
+    fn test_helios() {
+        ff_group_tests::group::test_prime_group_bits::<_, HeliosPoint>(&mut rand_core::OsRng);
+    }
+
+    #[test]
+    fn generator_helios() {
+        use helios::{G_X, G_Y, G};
+        assert!(G.x == G_X);
+        assert!(G.y == G_Y);
+        assert!(recover_y(G.x).unwrap() == -G.y);
+    }
+
+    #[test]
+    fn zero_x_is_invalid() {
+        assert!(Option::<Field25519>::from(recover_y(Field25519::ZERO)).is_none());
+    }
 }
 pub use helios::HeliosPoint;
 
 mod selene {
-  use super::*;
-  curve!(
+    use super::*;
+    curve!(
     Field25519,
     HelioseleneField,
     SelenePoint,
@@ -431,29 +443,59 @@ mod selene {
     "7a19d927b85cca9257c93177455c825f938bb198c8f09b37741e0aa6a1d3fdd2",
   );
 
-  #[test]
-  fn test_selene() {
-    ff_group_tests::group::test_prime_group_bits::<_, SelenePoint>(&mut rand_core::OsRng);
-  }
+    const B: HelioseleneField = HelioseleneField([
+        7556487686431327576,
+        17551737069031559182,
+        9174320235790983801,
+        8075648007084209857,
+    ]);
 
-  #[test]
-  fn generator_selene() {
-    use selene::{G_X, G_Y, G};
-    assert!(G.x == G_X);
-    assert!(G.y == G_Y);
-    assert!(recover_y(G.x).unwrap() == G.y);
-  }
+    const THREE_B: HelioseleneField = HelioseleneField([
+        6713872701225648330,
+        6610707299910605178,
+        9076216633663399790,
+        5780199947543077956
+    ]);
 
-  #[test]
-  fn zero_x_is_invalid() {
-    assert!(Option::<HelioseleneField>::from(recover_y(HelioseleneField::ZERO)).is_none());
-  }
+    const G_X: HelioseleneField = HelioseleneField([1, 0, 0, 0]);
+    const G_Y: HelioseleneField = HelioseleneField([
+        8367136868496834002,
+        10631786615102544695,
+        6325641539953132127,
+        8798302111665015442,
+    ]);
+
+    const NEG_3: HelioseleneField = HelioseleneField ([
+        15955590358068334395,
+        9151015759764969136,
+        18446744073709551615,
+        18446744073709551615
+    ]);
+
+
+    #[test]
+    fn test_selene() {
+        ff_group_tests::group::test_prime_group_bits::<_, SelenePoint>(&mut rand_core::OsRng);
+    }
+
+    #[test]
+    fn generator_selene() {
+        use selene::{G_X, G_Y, G};
+        assert!(G.x == G_X);
+        assert!(G.y == G_Y);
+        assert!(recover_y(G.x).unwrap() == G.y);
+    }
+
+    #[test]
+    fn zero_x_is_invalid() {
+        assert!(Option::<HelioseleneField>::from(recover_y(HelioseleneField::ZERO)).is_none());
+    }
 }
 pub use selene::SelenePoint;
 
 // Checks random won't infinitely loop
 #[test]
 fn random() {
-  HeliosPoint::random(&mut rand_core::OsRng);
-  SelenePoint::random(&mut rand_core::OsRng);
+    HeliosPoint::random(&mut rand_core::OsRng);
+    SelenePoint::random(&mut rand_core::OsRng);
 }
